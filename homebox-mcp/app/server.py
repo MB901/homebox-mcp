@@ -592,16 +592,24 @@ async def api_status(request):
     return JSONResponse(status)
 
 
+# Build the MCP ASGI app once so we can reuse its lifespan.
+# IMPORTANT: FastMCP starts its session manager inside the app's lifespan.
+# When mounting it under a custom Starlette app, that lifespan MUST be passed
+# to the parent app, otherwise the first request fails with
+# "RuntimeError: Task group is not initialized" (nested lifespans are ignored).
+mcp_app = mcp.http_app(transport="sse")
+
 # Create custom Starlette app with MCP mounted and auth middleware
 app = Starlette(
     routes=[
         Route("/", homepage),
         Route("/api/status", api_status),
-        Mount("/", app=mcp.http_app(transport="sse")),
+        Mount("/", app=mcp_app),
     ],
     middleware=[
         Middleware(BearerAuthMiddleware),
     ],
+    lifespan=mcp_app.lifespan,
 )
 
 

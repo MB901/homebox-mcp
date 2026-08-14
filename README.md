@@ -20,6 +20,13 @@ To install Homebox:
 2. Install the **Homebox** addon
 3. Start and configure your inventory
 
+### Homebox version compatibility
+
+This addon works with both older Homebox versions and **Homebox v0.26.0+**, which
+introduced a breaking API change (the "entity merge": `/items` and `/locations`
+were unified into `/entities`, and labels became tags). The addon **auto-detects**
+which API your Homebox speaks, so no configuration change is needed after upgrading.
+
 ## About
 
 This addon exposes an MCP server that allows AI assistants (like Claude) to

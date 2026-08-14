@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-14
+
+### Fixed
+
+- **MCP server no longer breaks on tool calls** (`RuntimeError: Task group is not
+  initialized`). The FastMCP app is now mounted with its `lifespan` passed to the
+  parent Starlette app, which is required by modern FastMCP to start its session
+  manager. This regressed silently after a rebuild pulled a newer FastMCP.
+
+### Added
+
+- **Compatibility with Homebox v0.26.0+ ("entity merge" API change).** In v0.26.0
+  Homebox removed `/items`, `/locations` and `/labels` in favor of a unified
+  `/entities` API (items and locations distinguished by `entityType.isLocation`)
+  and renamed labels to `/tags`. The client now **auto-detects** which API the
+  server speaks on first use and routes calls accordingly, so the addon works on
+  both older and newer Homebox versions with no reconfiguration.
+  See the [entity merge migration guide](https://homebox.software/en/advanced/entity-merge-upgrade/).
+
+### Changed
+
+- Dependency versions are now bounded (`fastmcp>=2.3.4,<3`, etc.) in the Dockerfile
+  and `requirements.txt` to prevent a future breaking release from silently
+  breaking the addon on the next image rebuild.
+
 ## [0.2.0] - 2026-01-26
 
 ### Added

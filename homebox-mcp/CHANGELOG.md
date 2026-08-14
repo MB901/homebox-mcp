@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2026-08-14
+
+### Changed
+
+- `README.md`/`README-pt-br.md`: reverted the MCP Tools section from 0.5.5's
+  category-grouped table back to the original one-row-per-tool `Tool |
+  Description` format, per preference — still listing all 18 tools (kept
+  from 0.5.5), just laid out the way it was before.
+
 ## [0.5.5] - 2026-08-14
 
 ### Fixed

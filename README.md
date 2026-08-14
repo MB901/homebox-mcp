@@ -159,14 +159,26 @@ Claude: [Searches and returns item location]
 
 ## MCP Tools
 
-18 tools are exposed in total:
-
-| Category   | Tools                                                                                                                                                            |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Locations  | `homebox_list_locations`, `homebox_get_location_tree`, `homebox_get_location`, `homebox_create_location`, `homebox_update_location`, `homebox_delete_location` |
-| Items      | `homebox_list_items`, `homebox_get_item`, `homebox_search`, `homebox_create_item`, `homebox_update_item`, `homebox_move_item`, `homebox_delete_item`           |
-| Labels     | `homebox_list_labels`, `homebox_create_label`, `homebox_update_label`, `homebox_delete_label`                                                                  |
-| Statistics | `homebox_get_statistics`                                                                                                                                        |
+| Tool                         | Description                          |
+| ----------------------------- | ------------------------------------- |
+| `homebox_list_locations`     | List all locations (flat list)       |
+| `homebox_get_location_tree`  | Get full location hierarchy tree     |
+| `homebox_get_location`       | Get location details (parent/children) |
+| `homebox_create_location`    | Create new location                  |
+| `homebox_update_location`    | Update location                      |
+| `homebox_delete_location`    | Delete location                      |
+| `homebox_list_items`         | List items with filters              |
+| `homebox_get_item`           | Get complete item details            |
+| `homebox_search`             | Search for items                     |
+| `homebox_create_item`        | Create new item                      |
+| `homebox_update_item`        | Update item fields                   |
+| `homebox_move_item`          | Move item to another location        |
+| `homebox_delete_item`        | Delete item                          |
+| `homebox_list_labels`        | List all labels                      |
+| `homebox_create_label`       | Create new label                     |
+| `homebox_update_label`       | Update label                         |
+| `homebox_delete_label`       | Delete label                         |
+| `homebox_get_statistics`     | Get inventory statistics             |
 
 [Full Documentation](homebox-mcp/DOCS.md)
 

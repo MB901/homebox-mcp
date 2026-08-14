@@ -530,15 +530,35 @@ async def homepage(request):
             <div class="tools-grid">
                 <div class="tool-item">
                     <div class="tool-name">homebox_list_locations</div>
-                    <div class="tool-desc">List all locations</div>
+                    <div class="tool-desc">List all locations (flat list)</div>
                 </div>
                 <div class="tool-item">
                     <div class="tool-name">homebox_get_location_tree</div>
                     <div class="tool-desc">Get full hierarchy tree</div>
                 </div>
                 <div class="tool-item">
+                    <div class="tool-name">homebox_get_location</div>
+                    <div class="tool-desc">Get location details</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_create_location</div>
+                    <div class="tool-desc">Create new location</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_update_location</div>
+                    <div class="tool-desc">Update location</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_delete_location</div>
+                    <div class="tool-desc">Delete location</div>
+                </div>
+                <div class="tool-item">
                     <div class="tool-name">homebox_list_items</div>
                     <div class="tool-desc">List items with filters</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_get_item</div>
+                    <div class="tool-desc">Get complete item details</div>
                 </div>
                 <div class="tool-item">
                     <div class="tool-name">homebox_search</div>
@@ -549,12 +569,32 @@ async def homepage(request):
                     <div class="tool-desc">Create new item</div>
                 </div>
                 <div class="tool-item">
+                    <div class="tool-name">homebox_update_item</div>
+                    <div class="tool-desc">Update item fields</div>
+                </div>
+                <div class="tool-item">
                     <div class="tool-name">homebox_move_item</div>
                     <div class="tool-desc">Move item to another location</div>
                 </div>
                 <div class="tool-item">
+                    <div class="tool-name">homebox_delete_item</div>
+                    <div class="tool-desc">Delete item</div>
+                </div>
+                <div class="tool-item">
                     <div class="tool-name">homebox_list_labels</div>
                     <div class="tool-desc">List all labels</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_create_label</div>
+                    <div class="tool-desc">Create new label</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_update_label</div>
+                    <div class="tool-desc">Update label</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_delete_label</div>
+                    <div class="tool-desc">Delete label</div>
                 </div>
                 <div class="tool-item">
                     <div class="tool-name">homebox_get_statistics</div>

@@ -186,11 +186,28 @@ class HomeboxClient:
     # Normalization helpers (entities mode -> legacy item/location shape)
     # =========================================================================
 
-    @staticmethod
-    def _entity_is_location(entity: dict[str, Any]) -> bool:
-        """Return True if an entity object represents a location/container."""
-        entity_type = entity.get("entityType") or {}
-        return bool(entity_type.get("isLocation"))
+    async def _get_location_ids(self) -> set[str]:
+        """Return the ids of every entity that is a location (entities mode).
+
+        Deliberately does NOT filter the plain ``GET /entities`` list by
+        ``entityType.isLocation``: that field is an eager-loaded relation
+        that (unlike scalar fields such as description/itemCount) is not
+        reliably populated on list results, which made ``get_locations()``
+        come back empty even when locations existed. ``GET /entities/tree``
+        is Homebox's own purpose-built "which entities are locations, and
+        how do they nest" endpoint, so it's used as the source of truth for
+        classification instead.
+        """
+        tree = await self._request("GET", "/entities/tree") or []
+        ids: set[str] = set()
+
+        def collect(nodes: list[dict[str, Any]]) -> None:
+            for node in nodes:
+                ids.add(node["id"])
+                collect(node.get("children") or [])
+
+        collect(tree)
+        return ids
 
     @staticmethod
     def _normalize_item(entity: dict[str, Any]) -> dict[str, Any]:
@@ -245,9 +262,9 @@ class HomeboxClient:
         if await self._get_api_mode() == "legacy":
             return await self._request("GET", "/locations")
 
+        location_ids = await self._get_location_ids()
         entities = await self._list_entities({})
-        # Locations are entities whose type is flagged isLocation.
-        return [e for e in entities if self._entity_is_location(e)]
+        return [e for e in entities if e.get("id") in location_ids]
 
     async def get_location(self, location_id: str) -> dict[str, Any]:
         """Get a specific location by ID.
@@ -399,10 +416,11 @@ class HomeboxClient:
 
         entities = await self._list_entities(params_e)
         # Keep only real items (exclude nested locations) and normalize shape.
+        location_ids = await self._get_location_ids()
         return [
             self._normalize_item(e)
             for e in entities
-            if not self._entity_is_location(e)
+            if e.get("id") not in location_ids
         ]
 
     async def get_item(self, item_id: str) -> dict[str, Any]:
@@ -714,6 +732,12 @@ class HomeboxClient:
     ) -> dict[str, Any]:
         """Update a label (tag in the modern API).
 
+        Fetches the current label first and merges in the requested changes.
+        Homebox's tag-update endpoint (``repo.TagUpdate``) takes a full
+        replacement object where ``name`` is required even when it isn't
+        changing, so sending only the fields the caller passed causes a
+        422 Unprocessable Entity.
+
         Args:
             label_id: The label UUID.
             name: New name (optional).
@@ -723,16 +747,27 @@ class HomeboxClient:
         Returns:
             Updated label object.
         """
-        data: dict[str, Any] = {}
-        if name is not None:
-            data["name"] = name
-        if description is not None:
-            data["description"] = description
-        if color is not None:
-            data["color"] = color
+        current = await self.get_label(label_id)
+        data: dict[str, Any] = {
+            "id": label_id,
+            "name": name if name is not None else current.get("name", ""),
+            "description": (
+                description if description is not None else current.get("description", "")
+            ),
+            "color": color if color is not None else current.get("color", ""),
+        }
+        icon = current.get("icon")
+        if icon:
+            data["icon"] = icon
 
         if await self._get_api_mode() == "legacy":
             return await self._request("PUT", f"/labels/{label_id}", json=data)
+
+        # Tags mode also supports a parent (nested tags); preserve it so it
+        # isn't silently cleared by this full-replacement update.
+        parent_id = current.get("parentId") or (current.get("parent") or {}).get("id")
+        if parent_id:
+            data["parentId"] = parent_id
         return await self._request("PUT", f"/tags/{label_id}", json=data)
 
     async def delete_label(self, label_id: str) -> None:

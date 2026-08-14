@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-08-14
+
+### Fixed
+
+- **`homebox_list_locations` / `homebox_get_location_tree` returned an empty
+  list even when locations existed** (Homebox v0.26.0+ / entities mode).
+  These filtered `GET /entities` results client-side by
+  `entityType.isLocation`, but that field is an eager-loaded relation that
+  isn't reliably populated on the plain list endpoint (unlike scalar fields
+  such as `description`/`itemCount`, or the same field on a single-entity
+  fetch, which does work — that's why `get_location`/`update_location`
+  weren't affected). Now uses Homebox's dedicated `GET /entities/tree`
+  endpoint as the source of truth for which entities are locations.
+- **`homebox_update_label` failed with `422 Unprocessable Entity`**
+  (entities mode). Homebox's tag-update endpoint (`repo.TagUpdate`) requires
+  a full replacement object where `name` is mandatory even when it isn't
+  changing; the client was only sending the fields the caller explicitly
+  passed, so a call that only changed e.g. `color` omitted `name` and was
+  rejected. It now fetches the current label first and merges in the
+  requested changes, mirroring the pattern already used for updating items
+  and locations (also preserves `parentId` for nested tags, matching the
+  fix already applied to `update_location` in 0.2.1).
+
 ## [0.5.2] - 2026-08-14
 
 ### Fixed

@@ -37,7 +37,7 @@ interajam com seu inventário do Homebox. Você pode:
 
 1. No Home Assistant, vá em **Configurações** → **Add-ons** → **Loja de Add-ons**
 2. Clique no menu (⋮) → **Repositórios**
-3. Adicione: `https://github.com/oangelo/homebox-mcp`
+3. Adicione: `https://github.com/MB901/homebox-mcp`
 4. Clique em **Adicionar** → **Fechar**
 
 ### Instalar Add-on

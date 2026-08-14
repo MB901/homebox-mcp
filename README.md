@@ -44,7 +44,7 @@ interact with your Homebox inventory. You can:
 
 1. In Home Assistant, go to **Settings** → **Add-ons** → **Add-on Store**
 2. Click the menu (⋮) → **Repositories**
-3. Add: `https://github.com/oangelo/homebox-mcp`
+3. Add: `https://github.com/MB901/homebox-mcp`
 4. Click **Add** → **Close**
 
 ### Install Add-on

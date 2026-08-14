@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-14
+
+### Fixed
+
+- Repository metadata (`repository.yaml`, `homebox-mcp/config.yaml`'s `url`,
+  and the READMEs' "Add Repository" step) pointed at the upstream
+  `oangelo/homebox-mcp` repo instead of this fork, which made Home Assistant
+  redirect there when adding this fork's URL to the Add-on Store instead of
+  recognizing it as its own repository. Re-pointed at `MB901/homebox-mcp`.
+
 ## [0.5.0] - 2026-08-14
 
 ### Added

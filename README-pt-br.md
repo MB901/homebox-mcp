@@ -152,15 +152,14 @@ Claude: [Busca e retorna localização do item]
 
 ## Ferramentas MCP
 
-| Ferramenta               | Descrição                   |
-| ------------------------ | --------------------------- |
-| `homebox_list_locations` | Lista todas as localizações |
-| `homebox_list_items`     | Lista itens com filtros     |
-| `homebox_search`         | Busca por itens             |
-| `homebox_create_item`    | Cria novo item              |
-| `homebox_move_item`      | Move item                   |
-| `homebox_list_labels`    | Lista labels                |
-| `homebox_get_statistics` | Estatísticas                |
+18 ferramentas são expostas no total:
+
+| Categoria    | Ferramentas                                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Localizações | `homebox_list_locations`, `homebox_get_location_tree`, `homebox_get_location`, `homebox_create_location`, `homebox_update_location`, `homebox_delete_location` |
+| Itens        | `homebox_list_items`, `homebox_get_item`, `homebox_search`, `homebox_create_item`, `homebox_update_item`, `homebox_move_item`, `homebox_delete_item`           |
+| Labels       | `homebox_list_labels`, `homebox_create_label`, `homebox_update_label`, `homebox_delete_label`                                                                  |
+| Estatísticas | `homebox_get_statistics`                                                                                                                                        |
 
 [Documentação completa](homebox-mcp/DOCS-pt-br.md)
 
@@ -179,7 +178,7 @@ cd homebox-mcp/app
 python server.py
 
 # Testar com MCP Inspector
-npx @anthropic/mcp-inspector http://localhost:8099/sse
+npx @modelcontextprotocol/inspector --server-url http://localhost:8099/sse --transport http
 ```
 
 ## Licença

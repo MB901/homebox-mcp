@@ -565,8 +565,8 @@ async def homepage(request):
 
         <footer>
             <p>
-                <a href="https://github.com/oangelo/homebox-mcp" target="_blank">GitHub</a> · 
-                Designed for use with <a href="https://github.com/Oddiesea/homebox-ingress-ha-addon" target="_blank">Homebox</a>
+                <a href="https://github.com/oangelo/homebox-mcp" target="_blank">GitHub</a> ·
+                Designed for use with the <a href="https://github.com/Oddiesea/homebox-ingress-ha-addon" target="_blank">Homebox HA Addon</a>
             </p>
         </footer>
     </div>

@@ -247,6 +247,53 @@ class HomeboxClient:
         # populate itemCount on each result).
         return await self._list_entities({"isLocation": True})
 
+    async def get_location_tree(self) -> list[dict[str, Any]]:
+        """Get the complete location hierarchy as a nested tree.
+
+        Returns:
+            List of root locations (no parent), each with a nested
+            ``children`` array. Every node has id, name, description,
+            item_count, children.
+        """
+        locations = await self.get_locations()
+
+        if await self._get_api_mode() == "legacy":
+            # The legacy /locations list doesn't include parent info (a
+            # long-standing Homebox limitation), so each location's full
+            # record must be fetched individually to learn its parent.
+            parent_of: dict[str, str | None] = {}
+            for loc in locations:
+                detail = await self.get_location(loc["id"])
+                parent = detail.get("parent")
+                parent_of[loc["id"]] = parent.get("id") if parent else None
+        else:
+            # Entities mode: get_locations() already eager-loads each
+            # entity's direct parent, no extra requests needed.
+            parent_of = {
+                loc["id"]: (loc.get("parent") or {}).get("id") for loc in locations
+            }
+
+        nodes: dict[str, dict[str, Any]] = {
+            loc["id"]: {
+                "id": loc["id"],
+                "name": loc.get("name"),
+                "description": loc.get("description", ""),
+                "item_count": loc.get("itemCount", 0),
+                "children": [],
+            }
+            for loc in locations
+        }
+
+        roots: list[dict[str, Any]] = []
+        for loc_id, node in nodes.items():
+            parent_id = parent_of.get(loc_id)
+            if parent_id and parent_id in nodes:
+                nodes[parent_id]["children"].append(node)
+            else:
+                roots.append(node)
+
+        return roots
+
     async def get_location(self, location_id: str) -> dict[str, Any]:
         """Get a specific location by ID.
 

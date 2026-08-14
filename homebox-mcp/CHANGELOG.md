@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5] - 2026-08-14
+
+### Fixed
+
+- **`homebox_get_location_tree` made a redundant HTTP request per location**
+  (entities mode). It already got each location's direct parent for free
+  from `get_locations()` (eager-loaded by the server), but was still
+  calling `get_location()` again for every node to re-fetch the same
+  information. Tree-building logic moved into a proper
+  `HomeboxClient.get_location_tree()` method (matching the thin-wrapper
+  pattern every other tool already follows), which uses that parent
+  directly in entities mode and only falls back to per-node fetches for
+  legacy Homebox (whose old `/locations` list genuinely omits parent info).
+- **`homebox_get_location`'s docstring promised a field that doesn't exist.**
+  It described the response as including `items: list of items in this
+  location`, but Homebox's entity response has no such field — the actual
+  field is `children` (a mix of sub-locations and/or items), plus
+  `itemCount`. Left uncorrected, this could mislead an AI client into
+  looking for the wrong key in tool results.
+- **`homebox_list_locations`'s docstring blamed "Homebox API limitations"**
+  for omitting hierarchy info, which was only ever true for legacy Homebox;
+  in entities mode the parent is available; this tool just omits it
+  deliberately for a simpler flat view. Reworded to stop suggesting an
+  external API limitation that (in entities mode) no longer exists.
+
+### Documentation
+
+- `DOCS.md`/`DOCS-pt-br.md` were missing `homebox_get_location_tree` from
+  the tool list entirely, and `README.md`/`README-pt-br.md`'s tool tables
+  covered only 7 of the 18 available tools. Both now list all 18.
+- The "Testing the Connection" section's `curl`/SSE example stopped working
+  after 0.5.2 switched to the Streamable HTTP transport (a bare `GET /sse`
+  now correctly returns `400 Bad Request` instead of an SSE handshake).
+  Replaced with instructions that work against the transport actually in
+  use, recommending the MCP Inspector.
+- Fixed the MCP Inspector install command: `@anthropic/mcp-inspector` isn't
+  a real package; the official one is `@modelcontextprotocol/inspector`.
+- `DOCS-pt-br.md` had drifted out of sync with the current auth flow and
+  code: it described automatic token generation on enabling
+  `mcp_auth_enabled` (the addon has never done this — the token must be
+  generated via the dashboard button and copied into the config, as
+  `DOCS.md` correctly describes), told users to leave the OAuth Client ID
+  blank (should be `mcp` or any text, matching every other doc), and its
+  "Authentication Error" troubleshooting section still referred to
+  username/password login — removed in 0.3.0 in favor of API tokens.
+
 ## [0.5.4] - 2026-08-14
 
 ### Fixed

@@ -207,6 +207,17 @@ class HomeboxClient:
     # =========================================================================
 
     @staticmethod
+    def _normalize_date(date_str: str) -> str:
+        """Expand a bare "YYYY-MM-DD" date into the full ISO 8601 timestamp
+        Homebox's date fields (``purchaseTime``/``purchaseDate``, etc.)
+        expect. Anything already containing a time component is passed
+        through unchanged.
+        """
+        if len(date_str) == 10 and date_str[4] == "-" and date_str[7] == "-":
+            return f"{date_str}T00:00:00.000Z"
+        return date_str
+
+    @staticmethod
     def _normalize_item(entity: dict[str, Any]) -> dict[str, Any]:
         """Map an entity object to the legacy item shape expected by the tools."""
         parent = entity.get("parent") or {}
@@ -228,6 +239,7 @@ class HomeboxClient:
             "modelNumber",
             "manufacturer",
             "purchasePrice",
+            "purchaseDate",
             "notes",
             "createdAt",
             "updatedAt",
@@ -546,6 +558,7 @@ class HomeboxClient:
         model_number: str | None = None,
         manufacturer: str | None = None,
         purchase_price: float | None = None,
+        purchase_date: str | None = None,
         notes: str | None = None,
     ) -> dict[str, Any]:
         """Update an item.
@@ -564,6 +577,9 @@ class HomeboxClient:
             model_number: Model number (optional).
             manufacturer: Manufacturer (optional).
             purchase_price: Purchase price (optional).
+            purchase_date: Purchase date (optional), as "YYYY-MM-DD" or a
+                full ISO 8601 timestamp. Only applied in entities mode
+                (Homebox v0.26.0+); ignored against the legacy API.
             notes: Notes (optional).
 
         Returns:
@@ -626,6 +642,8 @@ class HomeboxClient:
             data["manufacturer"] = manufacturer
         if purchase_price is not None:
             data["purchasePrice"] = purchase_price
+        if purchase_date is not None:
+            data["purchaseDate"] = self._normalize_date(purchase_date)
         if notes is not None:
             data["notes"] = notes
 

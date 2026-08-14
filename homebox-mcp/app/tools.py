@@ -261,6 +261,7 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         model_number: str | None = None,
         manufacturer: str | None = None,
         purchase_price: float | None = None,
+        purchase_date: str | None = None,
         notes: str | None = None,
     ) -> dict[str, Any]:
         """Update fields of an existing item.
@@ -282,6 +283,8 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             model_number: Model number.
             manufacturer: Manufacturer.
             purchase_price: Purchase price.
+            purchase_date: Purchase date, as "YYYY-MM-DD". Requires
+                Homebox v0.26.0+; ignored on older Homebox versions.
             notes: Notes/observations.
 
         Returns:
@@ -301,6 +304,7 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             model_number=model_number,
             manufacturer=manufacturer,
             purchase_price=purchase_price,
+            purchase_date=purchase_date,
             notes=notes,
         )
 

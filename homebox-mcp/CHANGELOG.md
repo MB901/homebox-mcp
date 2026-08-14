@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev2] - 2026-08-15
+
+### Fixed
+
+- **`homebox_update_item` had no way to set an item's purchase date.** Adds
+  a `purchase_date` parameter, accepting `"YYYY-MM-DD"` or a full ISO 8601
+  timestamp. Only applied against the `/entities` API (Homebox v0.26.0+,
+  field `purchaseDate`); ignored on the legacy `/items` API, which isn't
+  a maintenance target going forward. Also added to the set of fields
+  preserved when reading an item back, alongside `purchasePrice`.
+
 ## [0.5.1dev1] - 2026-08-15
 
 ### Added

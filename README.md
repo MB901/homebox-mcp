@@ -173,6 +173,7 @@ Claude: [Searches and returns item location]
 | `homebox_create_item`        | Create new item                      |
 | `homebox_update_item`        | Update item fields                   |
 | `homebox_move_item`          | Move item to another location        |
+| `homebox_add_item_attachment` | Attach a photo or document (PDF, manual, warranty, receipt) to an item |
 | `homebox_delete_item`        | Delete item                          |
 | `homebox_list_labels`        | List all labels                      |
 | `homebox_create_label`       | Create new label                     |

@@ -142,6 +142,9 @@ Se o Homebox está rodando externamente:
 - **homebox_create_item**: Cria um novo item
 - **homebox_update_item**: Atualiza campos de um item
 - **homebox_move_item**: Move um item para outra localização
+- **homebox_add_item_attachment**: Anexa uma foto ou documento (manual,
+  garantia, recibo) a um item (JPEG/PNG/GIF/WEBP/HEIC/PDF em base64,
+  máximo 10 MB)
 - **homebox_delete_item**: Remove um item
 
 ### Labels

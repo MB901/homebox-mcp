@@ -24,6 +24,26 @@ logger = logging.getLogger(__name__)
 # small, so a single large page avoids paginating in the common case.
 _ENTITIES_PAGE_SIZE = 10000
 
+# Cap on uploaded attachment size. Matches Homebox's own default
+# HBOX_WEB_MAX_UPLOAD_SIZE (10 MB) so oversized uploads are rejected locally
+# with a clear message instead of a generic error from the server (whose
+# actual configured limit may differ).
+_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+
+# Magic-byte signatures for the file formats accepted by
+# HomeboxClient.add_item_attachment(). Detecting the real format from the
+# file's content (rather than trusting a caller-supplied filename/content-type)
+# means the upload is validated before anything is sent to Homebox.
+_JPEG_MAGIC = b"\xff\xd8\xff"
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_GIF_MAGICS = (b"GIF87a", b"GIF89a")
+_HEIC_BRANDS = (b"heic", b"heix", b"hevc", b"heim", b"heis", b"hevm", b"hevs", b"mif1", b"msf1")
+_PDF_MAGIC = b"%PDF-"
+
+# Homebox's attachment.Type enum values a caller may set explicitly
+# ("thumbnail" is server-generated and deliberately excluded).
+_VALID_ATTACHMENT_TYPES = frozenset({"photo", "manual", "warranty", "receipt", "attachment"})
+
 
 class HomeboxClient:
     """Async HTTP client for interacting with the Homebox API."""
@@ -695,6 +715,118 @@ class HomeboxClient:
             Updated item object.
         """
         return await self.update_item(item_id, location_id=location_id)
+
+    @staticmethod
+    def _sniff_file(data: bytes) -> tuple[str, str, bool] | None:
+        """Identify a file's real format from its magic bytes.
+
+        Ignores any filename/content-type the caller may have supplied and
+        looks only at the file's actual content, so a mislabeled or
+        unsupported upload is rejected before it reaches Homebox.
+
+        Args:
+            data: Raw file bytes.
+
+        Returns:
+            A (content_type, file_extension, is_image) tuple, or None if the
+            data doesn't match any supported format.
+        """
+        if data.startswith(_JPEG_MAGIC):
+            return "image/jpeg", "jpg", True
+        if data.startswith(_PNG_MAGIC):
+            return "image/png", "png", True
+        if data.startswith(_GIF_MAGICS):
+            return "image/gif", "gif", True
+        if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            return "image/webp", "webp", True
+        if data[4:8] == b"ftyp" and data[8:12] in _HEIC_BRANDS:
+            return "image/heic", "heic", True
+        if data.startswith(_PDF_MAGIC):
+            return "application/pdf", "pdf", False
+        return None
+
+    async def add_item_attachment(
+        self,
+        item_id: str,
+        data: bytes,
+        filename: str | None = None,
+        attachment_type: str | None = None,
+        primary: bool = False,
+    ) -> dict[str, Any]:
+        """Attach a file to an item (photo, manual, warranty, receipt, ...).
+
+        Validates the upload before sending anything to Homebox: rejects
+        files over the size cap and rejects any data that isn't a
+        recognized format (checked via magic bytes, not the supplied
+        filename/content-type).
+
+        Args:
+            item_id: The item UUID.
+            data: Raw file bytes.
+            filename: File name to store, with extension (optional; a name
+                is generated from the detected format if omitted).
+            attachment_type: One of "photo", "manual", "warranty",
+                "receipt", "attachment" (optional; defaults to "photo" for
+                images and "attachment" for everything else, matching
+                Homebox's own auto-detection when the type is omitted).
+            primary: Whether to set this as the item's primary/cover photo
+                (only meaningful for images).
+
+        Returns:
+            Homebox's response: the item, including its updated attachments list.
+        """
+        if len(data) > _MAX_ATTACHMENT_BYTES:
+            raise ValueError(
+                f"File is {len(data) / 1_048_576:.1f} MB, which exceeds the "
+                f"{_MAX_ATTACHMENT_BYTES // 1_048_576} MB limit for attachment uploads."
+            )
+
+        sniffed = self._sniff_file(data)
+        if sniffed is None:
+            raise ValueError(
+                "Unrecognized file data: only JPEG, PNG, GIF, WEBP, HEIC images "
+                "and PDF documents are accepted for attachment uploads."
+            )
+        content_type, extension, is_image = sniffed
+        if not filename:
+            filename = f"{'photo' if is_image else 'document'}.{extension}"
+
+        if attachment_type is not None:
+            if attachment_type not in _VALID_ATTACHMENT_TYPES:
+                raise ValueError(
+                    f"attachment_type must be one of {sorted(_VALID_ATTACHMENT_TYPES)}, "
+                    f"got {attachment_type!r}."
+                )
+            resolved_type = attachment_type
+        else:
+            resolved_type = "photo" if is_image else "attachment"
+
+        await self._ensure_authenticated()
+        client = await self._get_client()
+        headers = {}
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
+
+        entity_kind = "items" if await self._get_api_mode() == "legacy" else "entities"
+        url = f"{self.base_url}/{entity_kind}/{item_id}/attachments"
+
+        # Deliberately not using _request(): it always sends
+        # "Content-Type: application/json", which would break the multipart
+        # body httpx builds from `files=`.
+        response = await client.request(
+            "POST",
+            url,
+            headers=headers,
+            files={"file": (filename, data, content_type)},
+            data={"name": filename, "type": resolved_type, "primary": "true" if primary else "false"},
+        )
+
+        if response.status_code == 401:
+            raise ValueError(
+                "Invalid or expired Homebox API token. Please generate a new token in Homebox settings."
+            )
+        response.raise_for_status()
+        return response.json()
 
     # =========================================================================
     # Labels / Tags

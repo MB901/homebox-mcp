@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev1] - 2026-08-15
+
+### Added
+
+- **New tool**: `homebox_add_item_attachment` - Attach a photo or document
+  (manual, warranty, receipt) to an item. The MCP server previously had no
+  way to add attachments at all. Files are passed base64-encoded (MCP tool
+  arguments are JSON, so raw binary isn't an option) and validated
+  **before** anything is uploaded to Homebox:
+  - Only JPEG, PNG, GIF, WEBP, HEIC images and PDF documents are accepted,
+    verified by sniffing the file's magic bytes rather than trusting the
+    caller-supplied filename or content-type.
+  - Uploads over 10 MB are rejected locally (matching Homebox's own
+    default `HBOX_WEB_MAX_UPLOAD_SIZE`), instead of pushing a large
+    payload through the MCP connection just to have the server reject it.
+  - An optional `attachment_type` selects how Homebox classifies the file
+    (`photo`, `manual`, `warranty`, `receipt`, `attachment`), defaulting to
+    `photo` for images and `attachment` for documents.
+  - Works against both the legacy `/items/{id}/attachments` and the
+    v0.26.0+ `/entities/{id}/attachments` endpoints, matching whichever
+    API mode the client already detected.
+
 ## [0.5.1] - 2026-08-15
 
 ### Fixed

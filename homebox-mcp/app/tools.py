@@ -1,5 +1,7 @@
 """MCP Tools for Homebox inventory management."""
 
+import base64
+import binascii
 from typing import Any
 
 from fastmcp import FastMCP
@@ -316,6 +318,44 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             Updated item with the new location.
         """
         return await client.move_item(item_id, location_id)
+
+    @mcp.tool()
+    async def homebox_add_item_attachment(
+        item_id: str,
+        file_base64: str,
+        filename: str | None = None,
+        attachment_type: str | None = None,
+        primary: bool = False,
+    ) -> dict[str, Any]:
+        """Attach a file to an item: a photo, or a document like a manual,
+        warranty, or receipt (e.g. a PDF).
+
+        The file must be base64-encoded (e.g. from a file read as bytes and
+        base64-encoded, not raw binary — MCP tool arguments are JSON). Only
+        JPEG, PNG, GIF, WEBP, HEIC images and PDF documents are accepted,
+        verified from the actual file content rather than the filename, and
+        uploads over 10 MB are rejected.
+
+        Args:
+            item_id: Item ID (UUID) to attach the file to.
+            file_base64: The file content, base64-encoded.
+            filename: File name to store, with extension (optional; a name
+                is generated from the detected format if omitted).
+            attachment_type: How Homebox should classify the file: "photo",
+                "manual", "warranty", "receipt", or "attachment" (optional;
+                defaults to "photo" for images and "attachment" for
+                documents like PDFs).
+            primary: Set this as the item's primary/cover photo (only
+                meaningful for images).
+
+        Returns:
+            The updated item, including its attachments list.
+        """
+        try:
+            data = base64.b64decode(file_base64, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise ValueError(f"file_base64 is not valid base64 data: {exc}") from exc
+        return await client.add_item_attachment(item_id, data, filename, attachment_type, primary)
 
     @mcp.tool()
     async def homebox_delete_item(item_id: str) -> str:

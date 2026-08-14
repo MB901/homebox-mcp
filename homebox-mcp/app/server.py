@@ -152,6 +152,7 @@ MCP Server connected to Homebox at: {config.homebox_url}
 - homebox_create_item - Create new item
 - homebox_update_item - Update item
 - homebox_move_item - Move item to another location
+- homebox_add_item_attachment - Attach a photo or document (e.g. PDF manual/receipt) to an item
 - homebox_delete_item - Remove item
 
 ### Labels
@@ -575,6 +576,10 @@ async def homepage(request):
                 <div class="tool-item">
                     <div class="tool-name">homebox_move_item</div>
                     <div class="tool-desc">Move item to another location</div>
+                </div>
+                <div class="tool-item">
+                    <div class="tool-name">homebox_add_item_attachment</div>
+                    <div class="tool-desc">Attach a photo or document to an item</div>
                 </div>
                 <div class="tool-item">
                     <div class="tool-name">homebox_delete_item</div>

@@ -10,7 +10,7 @@ from typing import Any
 from fastmcp import FastMCP
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route
 import uvicorn
@@ -20,40 +20,62 @@ from homebox_client import HomeboxClient
 from tools import register_tools
 
 
-class BearerAuthMiddleware(BaseHTTPMiddleware):
-    """Middleware to authenticate requests using Bearer or Basic auth."""
+class BearerAuthMiddleware:
+    """Middleware to authenticate requests using Bearer or Basic auth.
 
-    async def dispatch(self, request, call_next):
-        # Skip auth for dashboard pages (protected by HA auth)
-        if request.url.path in ["/", "/api/status"]:
-            return await call_next(request)
+    Implemented as raw ASGI (not starlette.middleware.base.BaseHTTPMiddleware)
+    on purpose: BaseHTTPMiddleware buffers/re-wraps the downstream response via
+    call_next(), which is incompatible with FastMCP's long-lived SSE stream and
+    intermittently raises "AssertionError: Unexpected message: ...
+    'http.response.start' ..." once a session has multiple in-flight requests.
+    See https://github.com/jlowin/fastmcp/issues/858 and
+    https://github.com/modelcontextprotocol/python-sdk/issues/883
+    """
 
-        # If auth is disabled, allow all requests
-        if not config.mcp_auth_enabled:
-            return await call_next(request)
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        # Only HTTP requests carry auth; pass lifespan/websocket scopes straight through.
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope, receive=receive)
+        path = request.url.path
+
+        # Skip auth for dashboard pages (protected by HA auth) or when disabled.
+        if path in ("/", "/api/status") or not config.mcp_auth_enabled:
+            await self.app(scope, receive, send)
+            return
 
         # Check for Authorization header
         auth_header = request.headers.get("Authorization", "")
-        
+
         # Log headers for debugging (only on /sse endpoint)
-        if request.url.path == "/sse":
-            logger.info(f"Auth request to {request.url.path}")
+        if path == "/sse":
+            logger.info(f"Auth request to {path}")
             logger.info(f"Authorization header: {auth_header[:50] if auth_header else 'MISSING'}...")
 
-        if not auth_header:
-            return Response(
-                content="Missing Authorization header",
+        async def deny(content: str) -> None:
+            response = Response(
+                content=content,
                 status_code=401,
                 headers={"WWW-Authenticate": 'Bearer realm="MCP"'},
             )
+            await response(scope, receive, send)
+
+        if not auth_header:
+            await deny("Missing Authorization header")
+            return
 
         token = None
-        
+
         # Try Bearer token first
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]
             logger.debug("Using Bearer authentication")
-        
+
         # Try Basic auth (client_id:client_secret)
         elif auth_header.startswith("Basic "):
             import base64
@@ -70,24 +92,18 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
                     logger.debug("Using Basic authentication (single value)")
             except Exception as e:
                 logger.error(f"Failed to decode Basic auth: {e}")
-        
+
         if not token:
-            return Response(
-                content="Invalid Authorization header format",
-                status_code=401,
-                headers={"WWW-Authenticate": 'Bearer realm="MCP"'},
-            )
+            await deny("Invalid Authorization header format")
+            return
 
         if token != config.mcp_auth_token:
             logger.warning(f"Invalid token received (length: {len(token)})")
-            return Response(
-                content="Invalid token",
-                status_code=401,
-                headers={"WWW-Authenticate": 'Bearer realm="MCP"'},
-            )
+            await deny("Invalid token")
+            return
 
         logger.debug("Authentication successful")
-        return await call_next(request)
+        await self.app(scope, receive, send)
 
 # Configure logging
 log_level = getattr(logging, config.log_level.upper(), logging.INFO)

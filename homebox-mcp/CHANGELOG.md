@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-08-14
+
+### Fixed
+
+- **Intermittent `AssertionError: Unexpected message: ... 'http.response.start' ...`**
+  crashing requests in the server logs. `BearerAuthMiddleware` was built on
+  `starlette.middleware.base.BaseHTTPMiddleware`, which buffers/re-wraps the
+  downstream response through `call_next()` — a known incompatibility with
+  FastMCP's long-lived SSE stream once a session has overlapping in-flight
+  requests. Rewritten as raw ASGI middleware, which passes streaming responses
+  through untouched. See
+  [fastmcp#858](https://github.com/jlowin/fastmcp/issues/858) and
+  [python-sdk#883](https://github.com/modelcontextprotocol/python-sdk/issues/883).
+
 ## [0.5.0] - 2026-08-14
 
 ### Fixed

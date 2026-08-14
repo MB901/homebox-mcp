@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-08-14
+
+### Fixed
+
+- **`homebox_list_locations` / `homebox_get_location_tree` still returned an
+  empty list** after the 0.5.3 fix, even with real locations present.
+  Root-caused this time by reading Homebox's server source directly: the
+  plain `GET /entities` list has an undocumented `isLocation` filter
+  (`repo.EntityQuery.IsLocation *bool`), and when it's omitted the server
+  **excludes locations from the results entirely**, "for backward
+  compatibility" with the old items-only `/items` endpoint. The 0.5.3 fix
+  used `GET /entities/tree` to figure out *which ids* were locations, but
+  still read the location data itself from the same filtered plain list —
+  which, by that same server-side default, could never contain a single
+  location entity to match. Fixed by requesting `GET
+  /entities?isLocation=true` directly, which is also what makes the server
+  populate each result's `itemCount`.
+
 ## [0.5.3] - 2026-08-14
 
 ### Fixed

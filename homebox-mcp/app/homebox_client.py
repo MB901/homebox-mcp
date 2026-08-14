@@ -186,29 +186,6 @@ class HomeboxClient:
     # Normalization helpers (entities mode -> legacy item/location shape)
     # =========================================================================
 
-    async def _get_location_ids(self) -> set[str]:
-        """Return the ids of every entity that is a location (entities mode).
-
-        Deliberately does NOT filter the plain ``GET /entities`` list by
-        ``entityType.isLocation``: that field is an eager-loaded relation
-        that (unlike scalar fields such as description/itemCount) is not
-        reliably populated on list results, which made ``get_locations()``
-        come back empty even when locations existed. ``GET /entities/tree``
-        is Homebox's own purpose-built "which entities are locations, and
-        how do they nest" endpoint, so it's used as the source of truth for
-        classification instead.
-        """
-        tree = await self._request("GET", "/entities/tree") or []
-        ids: set[str] = set()
-
-        def collect(nodes: list[dict[str, Any]]) -> None:
-            for node in nodes:
-                ids.add(node["id"])
-                collect(node.get("children") or [])
-
-        collect(tree)
-        return ids
-
     @staticmethod
     def _normalize_item(entity: dict[str, Any]) -> dict[str, Any]:
         """Map an entity object to the legacy item shape expected by the tools."""
@@ -262,9 +239,13 @@ class HomeboxClient:
         if await self._get_api_mode() == "legacy":
             return await self._request("GET", "/locations")
 
-        location_ids = await self._get_location_ids()
-        entities = await self._list_entities({})
-        return [e for e in entities if e.get("id") in location_ids]
+        # The plain (unfiltered) entities list excludes locations entirely
+        # by default on the Homebox server side, for backward compatibility
+        # with the old /items endpoint's behavior — there is no client-side
+        # way to recover them from that call. ?isLocation=true is required
+        # to get location entities back (and is also what makes the server
+        # populate itemCount on each result).
+        return await self._list_entities({"isLocation": True})
 
     async def get_location(self, location_id: str) -> dict[str, Any]:
         """Get a specific location by ID.
@@ -413,15 +394,13 @@ class HomeboxClient:
             params_e["tags"] = [label_id]
         if search:
             params_e["q"] = search
+        # Explicit for clarity: the server already excludes locations from
+        # results when this is omitted (see get_locations), but spelling it
+        # out here documents that behavior instead of relying on it silently.
+        params_e["isLocation"] = False
 
         entities = await self._list_entities(params_e)
-        # Keep only real items (exclude nested locations) and normalize shape.
-        location_ids = await self._get_location_ids()
-        return [
-            self._normalize_item(e)
-            for e in entities
-            if e.get("id") not in location_ids
-        ]
+        return [self._normalize_item(e) for e in entities]
 
     async def get_item(self, item_id: str) -> dict[str, Any]:
         """Get a specific item by ID.

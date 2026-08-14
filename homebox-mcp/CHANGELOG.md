@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-14
+
+### Fixed
+
+- The addon dashboard's "🛠️ Available Tools" grid still listed only 8 of
+  the 18 tools (a static HTML snippet in `server.py`, missed when the
+  `homebox://info` MCP resource and the READMEs' tool tables were brought
+  up to date). Now lists all 18.
+
 ## [0.6.0] - 2026-08-14
 
 ### Fixed

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-08-14
+
+### Fixed
+
+- **`Failed to validate request: Received request before initialization was
+  complete`, causing every tool call to fail** (even simple reads that had
+  worked moments earlier). This was a bug in the MCP Python SDK's legacy SSE
+  transport: a session is split across two independent HTTP requests (a
+  long-lived `GET /sse` stream that hands out a `session_id`, plus separate
+  `POST /messages?session_id=...` calls), and the SDK doesn't verify the GET
+  side has finished the initialize handshake before accepting POSTs on that
+  session. When a client (re)opens a second `/sse` connection — observed from
+  mcp-remote — requests can race and land on a session before it's marked
+  initialized. The server now uses the modern **Streamable HTTP** transport
+  instead (still mounted at `/sse` for backward compatibility, so no client
+  reconfiguration is needed), which uses a single endpoint keyed by an
+  `Mcp-Session-Id` header rather than two endpoints racing over a query
+  param, avoiding this class of bug entirely. See
+  [python-sdk#423](https://github.com/modelcontextprotocol/python-sdk/issues/423)
+  and
+  [python-sdk#1844](https://github.com/modelcontextprotocol/python-sdk/issues/1844).
+
 ## [0.5.1] - 2026-08-14
 
 ### Fixed

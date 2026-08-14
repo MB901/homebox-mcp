@@ -613,7 +613,24 @@ async def api_status(request):
 # When mounting it under a custom Starlette app, that lifespan MUST be passed
 # to the parent app, otherwise the first request fails with
 # "RuntimeError: Task group is not initialized" (nested lifespans are ignored).
-mcp_app = mcp.http_app(transport="sse")
+#
+# transport="http" (Streamable HTTP) rather than the legacy "sse" transport:
+# the old SSE transport splits a session across two independent HTTP requests
+# (a long-lived GET stream that hands out a session_id, plus separate POST
+# .../messages?session_id=... calls) with no server-side check that the GET
+# side has actually finished the initialize handshake before POSTs on that
+# session are accepted. If a client (re)opens a second GET/sse connection —
+# which mcp-remote can do — requests can race and land on a session before it
+# is marked initialized, raising "Received request before initialization was
+# complete" and making every tool call fail. Streamable HTTP uses a single
+# endpoint keyed by an `Mcp-Session-Id` header instead of two endpoints
+# racing over a session_id query param, which avoids this class of bug.
+# See https://github.com/modelcontextprotocol/python-sdk/issues/423 and
+# https://github.com/modelcontextprotocol/python-sdk/issues/1844.
+# `path="/sse"` keeps the existing endpoint URL working (mcp-remote already
+# tries Streamable HTTP first against whatever URL it's given before falling
+# back to legacy SSE), so no client-side reconfiguration is required.
+mcp_app = mcp.http_app(transport="http", path="/sse")
 
 # Create custom Starlette app with MCP mounted and auth middleware
 app = Starlette(
@@ -633,7 +650,7 @@ if __name__ == "__main__":
     logger.info(f"Starting Homebox MCP Server on {config.server_host}:{config.server_port}")
     logger.info(f"Connecting to Homebox at: {config.homebox_url}")
     logger.info(f"Dashboard available at: http://{config.server_host}:{config.server_port}/")
-    logger.info(f"MCP SSE endpoint at: http://{config.server_host}:{config.server_port}/sse")
+    logger.info(f"MCP endpoint (Streamable HTTP) at: http://{config.server_host}:{config.server_port}/sse")
 
     if config.mcp_auth_enabled:
         logger.info("MCP Authentication: ENABLED - Bearer token required")

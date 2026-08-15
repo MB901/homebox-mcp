@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev4] - 2026-08-15
+
+### Fixed
+
+- **`homebox_update_item` (entities mode) silently wiped any field not
+  explicitly passed** — `insured`, `archived`, `asset_id`,
+  `serial_number`, `model_number`, `manufacturer`, `purchase_price`,
+  `purchase_date`, and `notes` were only added to the PUT payload `if
+  <param> is not None`, so an update call that omitted one reset it to
+  empty/zero on Homebox's side instead of leaving it alone. Root cause:
+  Homebox's `PUT /entities/{id}` is a full-replacement update, not a
+  partial patch — any field missing from the JSON body is reset
+  server-side, not preserved. `name`/`description`/`quantity`/`location_id`
+  already correctly fell back to the item's current value when omitted;
+  the other fields didn't follow that same pattern. All of them now do:
+  every call first fetches the item's current state and every field in
+  the PUT payload falls back to it when the caller didn't pass a new
+  value, so a call that only changes one field no longer loses the rest.
+
 ## [0.5.1dev3] - 2026-08-15
 
 ### Added

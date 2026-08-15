@@ -644,6 +644,12 @@ class HomeboxClient:
         current_type = current.get("entityType") or {}
         current_tags = current.get("tags") or []
 
+        # Homebox's PUT /entities/{id} is a full-replacement update, not a
+        # partial patch: any field missing from this payload is reset to
+        # its zero value server-side, not left unchanged. Every field below
+        # must therefore always be present, falling back to its current
+        # value when the caller didn't pass one — the same pattern already
+        # used for name/description/quantity/parentId.
         data: dict[str, Any] = {
             "id": item_id,
             "name": name if name is not None else current.get("name", ""),
@@ -652,6 +658,27 @@ class HomeboxClient:
             ),
             "quantity": quantity if quantity is not None else current.get("quantity", 1),
             "parentId": location_id if location_id is not None else current_parent.get("id"),
+            "insured": insured if insured is not None else current.get("insured", False),
+            "archived": archived if archived is not None else current.get("archived", False),
+            "assetId": asset_id if asset_id is not None else current.get("assetId", ""),
+            "serialNumber": (
+                serial_number if serial_number is not None else current.get("serialNumber", "")
+            ),
+            "modelNumber": (
+                model_number if model_number is not None else current.get("modelNumber", "")
+            ),
+            "manufacturer": (
+                manufacturer if manufacturer is not None else current.get("manufacturer", "")
+            ),
+            "purchasePrice": (
+                purchase_price if purchase_price is not None else current.get("purchasePrice", 0)
+            ),
+            "purchaseDate": (
+                self._normalize_date(purchase_date)
+                if purchase_date is not None
+                else current.get("purchaseDate", "")
+            ),
+            "notes": notes if notes is not None else current.get("notes", ""),
         }
         if current_type.get("id"):
             data["entityTypeId"] = current_type["id"]
@@ -661,26 +688,6 @@ class HomeboxClient:
             data["tagIds"] = labels
         elif current_tags:
             data["tagIds"] = [tag["id"] for tag in current_tags]
-
-        # Optional fields
-        if insured is not None:
-            data["insured"] = insured
-        if archived is not None:
-            data["archived"] = archived
-        if asset_id is not None:
-            data["assetId"] = asset_id
-        if serial_number is not None:
-            data["serialNumber"] = serial_number
-        if model_number is not None:
-            data["modelNumber"] = model_number
-        if manufacturer is not None:
-            data["manufacturer"] = manufacturer
-        if purchase_price is not None:
-            data["purchasePrice"] = purchase_price
-        if purchase_date is not None:
-            data["purchaseDate"] = self._normalize_date(purchase_date)
-        if notes is not None:
-            data["notes"] = notes
 
         entity = await self._request("PUT", f"/entities/{item_id}", json=data)
         return self._normalize_item(entity)

@@ -260,8 +260,16 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         serial_number: str | None = None,
         model_number: str | None = None,
         manufacturer: str | None = None,
+        lifetime_warranty: bool | None = None,
+        warranty_expires: str | None = None,
+        warranty_details: str | None = None,
         purchase_price: float | None = None,
         purchase_date: str | None = None,
+        purchase_from: str | None = None,
+        sold_date: str | None = None,
+        sold_to: str | None = None,
+        sold_price: float | None = None,
+        sold_notes: str | None = None,
         notes: str | None = None,
     ) -> dict[str, Any]:
         """Update fields of an existing item.
@@ -282,9 +290,25 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             serial_number: Serial number.
             model_number: Model number.
             manufacturer: Manufacturer.
+            lifetime_warranty: Lifetime warranty flag (true/false). Requires
+                Homebox v0.26.0+; ignored on older Homebox versions.
+            warranty_expires: Warranty expiration date, as "YYYY-MM-DD".
+                Requires Homebox v0.26.0+; ignored on older Homebox versions.
+            warranty_details: Warranty details/notes. Requires Homebox
+                v0.26.0+; ignored on older Homebox versions.
             purchase_price: Purchase price.
             purchase_date: Purchase date, as "YYYY-MM-DD". Requires
                 Homebox v0.26.0+; ignored on older Homebox versions.
+            purchase_from: Where the item was purchased. Requires Homebox
+                v0.26.0+; ignored on older Homebox versions.
+            sold_date: Date the item was sold, as "YYYY-MM-DD". Requires
+                Homebox v0.26.0+; ignored on older Homebox versions.
+            sold_to: Who the item was sold to. Requires Homebox v0.26.0+;
+                ignored on older Homebox versions.
+            sold_price: Sale price. Requires Homebox v0.26.0+; ignored on
+                older Homebox versions.
+            sold_notes: Notes about the sale. Requires Homebox v0.26.0+;
+                ignored on older Homebox versions.
             notes: Notes/observations.
 
         Returns:
@@ -303,8 +327,16 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             serial_number=serial_number,
             model_number=model_number,
             manufacturer=manufacturer,
+            lifetime_warranty=lifetime_warranty,
+            warranty_expires=warranty_expires,
+            warranty_details=warranty_details,
             purchase_price=purchase_price,
             purchase_date=purchase_date,
+            purchase_from=purchase_from,
+            sold_date=sold_date,
+            sold_to=sold_to,
+            sold_price=sold_price,
+            sold_notes=sold_notes,
             notes=notes,
         )
 

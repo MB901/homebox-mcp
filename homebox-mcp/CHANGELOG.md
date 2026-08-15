@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev5] - 2026-08-15
+
+### Added
+
+- **`homebox_update_item` now supports 8 additional fields**:
+  `lifetime_warranty`, `warranty_expires`, `warranty_details`,
+  `purchase_from`, `sold_date`, `sold_to`, `sold_price`, `sold_notes`.
+  These match fields Homebox's `EntityUpdate` API already supports but
+  this MCP didn't expose. Like `purchase_date`, they only apply in
+  entities mode (Homebox v0.26.0+) and are ignored against the legacy
+  API. `homebox_get_item` also now surfaces these fields (when set)
+  plus `attachments` and `entityType`, which were previously stripped
+  out by `_normalize_item()`'s allowlist.
+
 ## [0.5.1dev4] - 2026-08-15
 
 ### Fixed

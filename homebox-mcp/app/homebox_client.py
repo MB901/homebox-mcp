@@ -273,12 +273,22 @@ class HomeboxClient:
             "serialNumber",
             "modelNumber",
             "manufacturer",
+            "lifetimeWarranty",
+            "warrantyExpires",
+            "warrantyDetails",
             "purchasePrice",
             "purchaseDate",
+            "purchaseFrom",
+            "soldDate",
+            "soldTo",
+            "soldPrice",
+            "soldNotes",
             "notes",
             "createdAt",
             "updatedAt",
             "imageId",
+            "attachments",
+            "entityType",
         ):
             if key in entity:
                 normalized[key] = entity[key]
@@ -592,8 +602,16 @@ class HomeboxClient:
         serial_number: str | None = None,
         model_number: str | None = None,
         manufacturer: str | None = None,
+        lifetime_warranty: bool | None = None,
+        warranty_expires: str | None = None,
+        warranty_details: str | None = None,
         purchase_price: float | None = None,
         purchase_date: str | None = None,
+        purchase_from: str | None = None,
+        sold_date: str | None = None,
+        sold_to: str | None = None,
+        sold_price: float | None = None,
+        sold_notes: str | None = None,
         notes: str | None = None,
     ) -> dict[str, Any]:
         """Update an item.
@@ -611,10 +629,34 @@ class HomeboxClient:
             serial_number: Serial number (optional).
             model_number: Model number (optional).
             manufacturer: Manufacturer (optional).
+            lifetime_warranty: Lifetime warranty flag (optional). Only
+                applied in entities mode (Homebox v0.26.0+); ignored
+                against the legacy API.
+            warranty_expires: Warranty expiration date (optional), as
+                "YYYY-MM-DD" or a full ISO 8601 timestamp. Only applied in
+                entities mode (Homebox v0.26.0+); ignored against the
+                legacy API.
+            warranty_details: Warranty details/notes (optional). Only
+                applied in entities mode (Homebox v0.26.0+); ignored
+                against the legacy API.
             purchase_price: Purchase price (optional).
             purchase_date: Purchase date (optional), as "YYYY-MM-DD" or a
                 full ISO 8601 timestamp. Only applied in entities mode
                 (Homebox v0.26.0+); ignored against the legacy API.
+            purchase_from: Where the item was purchased (optional). Only
+                applied in entities mode (Homebox v0.26.0+); ignored
+                against the legacy API.
+            sold_date: Date the item was sold (optional), as "YYYY-MM-DD"
+                or a full ISO 8601 timestamp. Only applied in entities
+                mode (Homebox v0.26.0+); ignored against the legacy API.
+            sold_to: Who the item was sold to (optional). Only applied in
+                entities mode (Homebox v0.26.0+); ignored against the
+                legacy API.
+            sold_price: Sale price (optional). Only applied in entities
+                mode (Homebox v0.26.0+); ignored against the legacy API.
+            sold_notes: Notes about the sale (optional). Only applied in
+                entities mode (Homebox v0.26.0+); ignored against the
+                legacy API.
             notes: Notes (optional).
 
         Returns:
@@ -670,6 +712,21 @@ class HomeboxClient:
             "manufacturer": (
                 manufacturer if manufacturer is not None else current.get("manufacturer", "")
             ),
+            "lifetimeWarranty": (
+                lifetime_warranty
+                if lifetime_warranty is not None
+                else current.get("lifetimeWarranty", False)
+            ),
+            "warrantyExpires": (
+                self._normalize_date(warranty_expires)
+                if warranty_expires is not None
+                else current.get("warrantyExpires", "")
+            ),
+            "warrantyDetails": (
+                warranty_details
+                if warranty_details is not None
+                else current.get("warrantyDetails", "")
+            ),
             "purchasePrice": (
                 purchase_price if purchase_price is not None else current.get("purchasePrice", 0)
             ),
@@ -678,6 +735,17 @@ class HomeboxClient:
                 if purchase_date is not None
                 else current.get("purchaseDate", "")
             ),
+            "purchaseFrom": (
+                purchase_from if purchase_from is not None else current.get("purchaseFrom", "")
+            ),
+            "soldDate": (
+                self._normalize_date(sold_date)
+                if sold_date is not None
+                else current.get("soldDate", "")
+            ),
+            "soldTo": sold_to if sold_to is not None else current.get("soldTo", ""),
+            "soldPrice": sold_price if sold_price is not None else current.get("soldPrice", 0),
+            "soldNotes": sold_notes if sold_notes is not None else current.get("soldNotes", ""),
             "notes": notes if notes is not None else current.get("notes", ""),
         }
         if current_type.get("id"):

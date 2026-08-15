@@ -362,6 +362,50 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         return await client.add_item_attachment(item_id, data, filename, attachment_type, primary)
 
     @mcp.tool()
+    async def homebox_add_item_attachment_from_url(
+        item_id: str,
+        url: str,
+        filename: str | None = None,
+        attachment_type: str | None = None,
+        primary: bool = False,
+    ) -> dict[str, Any]:
+        """Attach a file to an item by downloading it from a URL.
+
+        Use this when YOU found the file yourself (e.g. a product photo from
+        a web search, or a manual/spec PDF linked from a manufacturer's
+        page) — not when the user has shared/uploaded a file in the
+        conversation. For a file the user supplied, use
+        homebox_add_item_attachment with base64-encoded bytes instead; this
+        tool takes a URL and downloads it server-side.
+
+        The URL must be http:// or https:// and resolve to a public address
+        (internal/private/loopback addresses are refused, including through
+        redirects). The download is capped at 10 MB and, like
+        homebox_add_item_attachment, only JPEG, PNG, GIF, WEBP, HEIC images
+        and PDF documents are accepted — verified from the actual downloaded
+        content, not the URL or any server-supplied content-type.
+
+        Args:
+            item_id: Item ID (UUID) to attach the file to.
+            url: Direct http(s) URL to the image or document.
+            filename: File name to store, with extension (optional; derived
+                from the URL if it has one, else generated from the
+                detected format).
+            attachment_type: How Homebox should classify the file: "photo",
+                "manual", "warranty", "receipt", or "attachment" (optional;
+                defaults to "photo" for images and "attachment" for
+                documents).
+            primary: Set this as the item's primary/cover photo (only
+                meaningful for images).
+
+        Returns:
+            The updated item, including its attachments list.
+        """
+        return await client.add_item_attachment_from_url(
+            item_id, url, filename, attachment_type, primary
+        )
+
+    @mcp.tool()
     async def homebox_delete_item(item_id: str) -> str:
         """Remove an item from the inventory.
 

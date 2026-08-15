@@ -167,6 +167,7 @@ Claude: [Busca e retorna localização do item]
 | `homebox_update_item`         | Atualiza campos do item                 |
 | `homebox_move_item`           | Move item para outra localização        |
 | `homebox_add_item_attachment` | Anexa uma foto ou documento (PDF, manual, garantia, recibo) a um item |
+| `homebox_add_item_attachment_from_url` | Anexa uma foto ou documento baixando-o de uma URL |
 | `homebox_delete_item`         | Remove item                             |
 | `homebox_list_labels`         | Lista todas as labels                   |
 | `homebox_create_label`        | Cria nova label                         |

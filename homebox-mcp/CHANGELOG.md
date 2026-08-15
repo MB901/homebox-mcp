@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev3] - 2026-08-15
+
+### Added
+
+- **New tool**: `homebox_add_item_attachment_from_url` - Attach a photo or
+  document to an item by downloading it from a URL, for files found by
+  Claude itself (e.g. a product photo from a web search) rather than ones
+  the user uploaded in chat (that path already works via the existing
+  `homebox_add_item_attachment` base64 tool). Delegates all
+  format-sniffing/validation/upload logic to `add_item_attachment` (same
+  10 MB cap, same JPEG/PNG/GIF/WEBP/HEIC/PDF allowlist by magic bytes).
+  - **SSRF guard**: only `http://`/`https://` URLs are accepted, and the
+    URL's host must resolve to a public IP address — private, loopback,
+    link-local, reserved, multicast, and CGNAT (`100.64.0.0/10`)
+    addresses are all refused, closing off requests to internal Home
+    Assistant services or cloud metadata endpoints. Re-validated on every
+    redirect hop actually followed (capped at 5), so a public URL can't
+    bounce the request to an internal address after the fact.
+  - **Fail-fast extension check**: a URL whose path clearly ends in a
+    known-unsupported extension (`.zip`, `.exe`, `.mp4`, `.docx`, ...) is
+    rejected before any network request, instead of downloading up to
+    10 MB just to have `_sniff_file` reject it afterwards. Deliberately
+    not an allowlist — most legitimate image URLs (CDNs, Wikipedia,
+    search results) have no extension at all or a query string after
+    one, so only recognized-wrong extensions are rejected early;
+    everything else still goes through the real, content-based
+    `_sniff_file` check after download.
+  - The download itself is streamed and aborted as soon as more than
+    10 MB has been read, rather than trusting a `Content-Length` header
+    (which can be absent or wrong) or fully buffering an arbitrarily
+    large response first.
+  - Known limitation, accepted as proportionate to this addon's
+    single-user home-network threat model: this is a pre-flight DNS
+    check, not full DNS-rebinding protection (the resolved address could
+    theoretically change between the check and the actual request a
+    moment later).
+
 ## [0.5.1dev2] - 2026-08-15
 
 ### Fixed

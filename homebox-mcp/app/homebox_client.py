@@ -11,8 +11,13 @@ right endpoints, normalizing the new "entity" objects back to the item/location
 shape the rest of the addon (and the MCP tools) already expect.
 """
 
+import asyncio
+import ipaddress
 import logging
+import socket
+from pathlib import PurePosixPath
 from typing import Any
+from urllib.parse import unquote, urljoin, urlsplit
 
 import httpx
 
@@ -29,6 +34,36 @@ _ENTITIES_PAGE_SIZE = 10000
 # with a clear message instead of a generic error from the server (whose
 # actual configured limit may differ).
 _MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+
+# Guards for add_item_attachment_from_url()'s server-side fetch of an
+# LLM-supplied URL: cap on redirect hops followed, and a descriptive
+# User-Agent (some image hosts/CDNs reject the default httpx one).
+_MAX_REDIRECTS = 5
+_DOWNLOAD_USER_AGENT = "homebox-mcp (+https://github.com/MB901/homebox-mcp)"
+
+# Extensions that are unambiguously NOT one of the supported attachment
+# formats (JPEG/PNG/GIF/WEBP/HEIC/PDF). Used only as a fail-fast optimization
+# in add_item_attachment_from_url() to skip downloading a URL that's
+# obviously the wrong type — NOT a security boundary (a URL's extension is
+# just a name and proves nothing about the actual content). The real gate
+# is always _sniff_file() on the downloaded bytes. Deliberately not an
+# allowlist: most legitimate image URLs (CDNs, Wikipedia, search results)
+# have no extension at all or a query string after it, so only extensions
+# recognized here as clearly wrong are rejected early — anything else
+# (missing, unknown, or a supported one) proceeds to download + sniff.
+_DISALLOWED_URL_EXTENSIONS = frozenset({
+    # executables / installers
+    "exe", "msi", "dmg", "apk", "bat", "sh", "bin", "deb", "rpm", "app",
+    # archives
+    "zip", "rar", "7z", "tar", "gz", "bz2", "xz",
+    # video
+    "mp4", "mov", "avi", "mkv", "webm", "flv", "wmv", "m4v",
+    # audio
+    "mp3", "wav", "ogg", "flac", "m4a", "aac", "wma",
+    # other documents / data / code
+    "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "json",
+    "xml", "html", "htm", "js", "css",
+})
 
 # Magic-byte signatures for the file formats accepted by
 # HomeboxClient.add_item_attachment(). Detecting the real format from the
@@ -763,6 +798,134 @@ class HomeboxClient:
             return "application/pdf", "pdf", False
         return None
 
+    @staticmethod
+    def _check_url_extension(url: str) -> None:
+        """Fail-fast check: raise ValueError if `url`'s path clearly ends
+        in a known-unsupported extension (see _DISALLOWED_URL_EXTENSIONS),
+        so add_item_attachment_from_url() can skip downloading a file
+        that's obviously the wrong type. Not a security boundary — a
+        URL's extension is just a name, easily missing, wrong, or
+        spoofed. URLs with no extension or an unrecognized one pass
+        through unchecked; _sniff_file() on the downloaded bytes remains
+        the real gate either way.
+        """
+        path = urlsplit(url).path
+        ext = PurePosixPath(unquote(path)).suffix.lstrip(".").lower()
+        if ext in _DISALLOWED_URL_EXTENSIONS:
+            raise ValueError(
+                f"URL ends in '.{ext}', which isn't a supported attachment format "
+                "(JPEG, PNG, GIF, WEBP, HEIC, PDF); refusing to download it."
+            )
+
+    @staticmethod
+    def _check_public_host(hostname: str, candidates: list) -> None:
+        """Raise ValueError if any resolved address isn't public.
+
+        Used by _validate_public_url() as the SSRF guard for
+        add_item_attachment_from_url(): the addon runs inside the user's
+        Home Assistant network, so an LLM-supplied URL must not be able to
+        reach internal-only services through this fetch.
+        """
+        for ip in candidates:
+            mapped = getattr(ip, "ipv4_mapped", None)
+            check_ip = mapped or ip
+            if (
+                check_ip.is_private
+                or check_ip.is_loopback
+                or check_ip.is_link_local
+                or check_ip.is_reserved
+                or check_ip.is_multicast
+                or check_ip.is_unspecified
+                or not check_ip.is_global
+            ):
+                raise ValueError(
+                    f"URL host {hostname!r} resolves to a non-public address "
+                    f"({check_ip}); refusing to fetch it."
+                )
+
+    @staticmethod
+    async def _validate_public_url(url: str) -> None:
+        """SSRF guard: raise ValueError unless `url` is http(s) and every
+        address its host resolves to is public.
+
+        Pre-flight check only: it does not close a DNS-rebinding TOCTOU
+        gap between this check and the moment httpx opens its own
+        connection a moment later. Accepted as proportionate to this
+        addon's single-user home-network threat model.
+        """
+        parts = urlsplit(url)
+        if parts.scheme not in ("http", "https"):
+            raise ValueError(f"URL must be http:// or https://, got {parts.scheme!r} in {url!r}.")
+        hostname = parts.hostname
+        if not hostname:
+            raise ValueError(f"URL has no hostname: {url!r}")
+
+        try:
+            candidates = [ipaddress.ip_address(hostname)]
+        except ValueError:
+            port = parts.port or (443 if parts.scheme == "https" else 80)
+            try:
+                addrinfo = await asyncio.to_thread(
+                    socket.getaddrinfo, hostname, port, type=socket.SOCK_STREAM
+                )
+            except socket.gaierror as exc:
+                raise ValueError(f"Could not resolve host {hostname!r}: {exc}") from exc
+            candidates = [ipaddress.ip_address(info[4][0]) for info in addrinfo]
+
+        HomeboxClient._check_public_host(hostname, candidates)
+
+    async def _fetch_url_capped(self, url: str) -> bytes:
+        """Download `url` with a streamed size cap.
+
+        Re-validates the SSRF guard on every redirect hop actually
+        followed: a URL that passes the check can still redirect to an
+        internal address at request time, so redirects are followed
+        manually (capped at _MAX_REDIRECTS) instead of via httpx's
+        built-in follow_redirects, re-checking each Location header
+        before following it.
+
+        Args:
+            url: http(s) URL to download.
+
+        Returns:
+            The downloaded bytes.
+        """
+        client = await self._get_client()
+        headers = {"User-Agent": _DOWNLOAD_USER_AGENT}
+        current_url = url
+
+        for _ in range(_MAX_REDIRECTS + 1):
+            await self._validate_public_url(current_url)
+            try:
+                async with client.stream(
+                    "GET", current_url, headers=headers, follow_redirects=False
+                ) as response:
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        location = response.headers.get("location")
+                        if not location:
+                            raise ValueError(
+                                f"URL returned a redirect ({response.status_code}) "
+                                "with no Location header."
+                            )
+                        current_url = urljoin(current_url, location)
+                        continue
+                    response.raise_for_status()
+                    data = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        data.extend(chunk)
+                        if len(data) > _MAX_ATTACHMENT_BYTES:
+                            raise ValueError(
+                                f"Remote file exceeds the {_MAX_ATTACHMENT_BYTES // 1_048_576} MB "
+                                "limit for attachment uploads (download aborted)."
+                            )
+                    return bytes(data)
+            except httpx.HTTPError as exc:
+                raise ValueError(f"Failed to download file from URL: {exc}") from exc
+
+        raise ValueError(
+            f"URL redirected more than {_MAX_REDIRECTS} times; refusing to follow further."
+        )
+
     async def add_item_attachment(
         self,
         item_id: str,
@@ -845,6 +1008,47 @@ class HomeboxClient:
             )
         response.raise_for_status()
         return response.json()
+
+    async def add_item_attachment_from_url(
+        self,
+        item_id: str,
+        url: str,
+        filename: str | None = None,
+        attachment_type: str | None = None,
+        primary: bool = False,
+    ) -> dict[str, Any]:
+        """Download a file from a URL and attach it to an item.
+
+        For files the caller found itself (e.g. a product photo from a web
+        search) rather than ones the user supplied directly — see
+        add_item_attachment() for that path. Delegates all format
+        sniffing/size validation/upload logic to add_item_attachment() once
+        the download completes; this method only adds URL validation (SSRF
+        guard, see _validate_public_url; fail-fast extension check, see
+        _check_url_extension) and a streamed size cap so an oversized or
+        malicious response is never fully buffered.
+
+        Args:
+            item_id: The item UUID.
+            url: http(s) URL to download the file from.
+            filename: File name to store (optional; derived from the URL's
+                path if it looks like one, else generated from the detected
+                format like add_item_attachment() does).
+            attachment_type: See add_item_attachment().
+            primary: See add_item_attachment().
+
+        Returns:
+            Homebox's response: the item, including its updated attachments list.
+        """
+        self._check_url_extension(url)
+
+        if not filename:
+            candidate = PurePosixPath(unquote(urlsplit(url).path)).name
+            if candidate and "." in candidate:
+                filename = candidate
+
+        data = await self._fetch_url_capped(url)
+        return await self.add_item_attachment(item_id, data, filename, attachment_type, primary)
 
     # =========================================================================
     # Labels / Tags

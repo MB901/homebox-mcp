@@ -146,6 +146,11 @@ If Homebox is running externally:
 - **homebox_add_item_attachment**: Attach a photo or document (manual,
   warranty, receipt) to an item (base64-encoded JPEG/PNG/GIF/WEBP/HEIC/PDF,
   max 10 MB)
+- **homebox_add_item_attachment_from_url**: Attach a photo or document to
+  an item by downloading it from a URL (e.g. one found via web search)
+  instead of base64 bytes the user supplied. Same format/size validation
+  as homebox_add_item_attachment; refuses URLs resolving to
+  private/internal addresses, including through redirects (SSRF guard)
 - **homebox_delete_item**: Remove an item
 
 ### Labels

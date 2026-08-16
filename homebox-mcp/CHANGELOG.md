@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev8] - 2026-08-16
+
+### Changed
+
+- **Recommended Homebox addon link updated.** The previously recommended
+  [homebox-ingress-ha-addon](https://github.com/Oddiesea/homebox-ingress-ha-addon)
+  no longer exists; replaced everywhere (`README.md`, `README-pt-br.md`,
+  `DOCS.md`, `DOCS-pt-br.md`, the addon's dashboard footer) with
+  [Crafter-Y/homebox-addon](https://github.com/Crafter-Y/homebox-addon).
+- **Fixed this addon's own install instructions pointing at the upstream
+  repo instead of this fork.** `README.md`/`README-pt-br.md` told users to
+  add `https://github.com/oangelo/homebox-mcp` — the unmaintained upstream
+  — instead of `https://github.com/MB901/homebox-mcp`, the repo this
+  addon's own `config.yaml` (`url:`) actually points to and where every
+  fix in this changelog lives.
+- **Added "My Home Assistant" one-click install buttons** for both this
+  addon and the recommended Homebox addon. For this addon, the button uses
+  the `supervisor_addon` redirect (`addon` + `repository_url` params),
+  which adds the repository and opens the addon's install page in one
+  step, rather than just the `supervisor_add_addon_repository` redirect
+  used for the Homebox addon link (add-repository only, then find and
+  install manually).
+- Collapsed each "Manual install" step list into a `<details>` dropdown
+  below its one-click button, so the button is the first thing readers see.
+
+## [0.5.1dev7] - 2026-08-16
+
+### Changed
+
+- **`homebox_add_item_attachment`'s size limit dropped from 10 MB to 1 MB.**
+  Root cause of a reported "Claude hangs" issue: attaching a file through
+  this base64 tool requires the *calling model* to generate the entire
+  file as base64 text to compose the tool call — a 1 MB file is already
+  ~1.37M characters of output. Confirmed via the MCP spec (through the
+  2026-07-28 RC) and Claude's own host implementations that there is
+  currently no way for a client to inject an uploaded file's bytes into a
+  tool argument without the model generating them itself (MCP Resources
+  only flow server→client; no Claude host auto-populates a tool argument
+  from a chat attachment). A cap far below the old 10 MB limit — and a
+  docstring that says so plainly — turns an oversized attempt into an
+  immediate, clear error instead of a multi-minute (or failing)
+  generation. `homebox_add_item_attachment_from_url` is unaffected and
+  still capped at 10 MB: the server downloads the file directly, so the
+  model only ever supplies a short URL, with no generation-cost problem.
+
 ## [0.5.1dev6] - 2026-08-15
 
 ### Added

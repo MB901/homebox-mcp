@@ -12,13 +12,18 @@ MCP (Model Context Protocol) server for managing Homebox inventory via AI assist
 
 This addon was designed to work with **Homebox** running on Home Assistant.
 
-**Recommended Homebox addon:** [homebox-ingress-ha-addon](https://github.com/Oddiesea/homebox-ingress-ha-addon)
+**Recommended Homebox addon:** [homebox-addon](https://github.com/Crafter-Y/homebox-addon)
 
-To install Homebox:
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FCrafter-Y%2Fhomebox-addon)
 
-1. Add the repository: `https://github.com/Oddiesea/homebox-ingress-ha-addon`
+<details>
+<summary>Manual install</summary>
+
+1. Add the repository: `https://github.com/Crafter-Y/homebox-addon`
 2. Install the **Homebox** addon
 3. Start and configure your inventory
+
+</details>
 
 ### Homebox version compatibility
 
@@ -40,19 +45,25 @@ interact with your Homebox inventory. You can:
 
 ## Installation
 
-### Add Repository
+### One-click install
+
+[![Open your Home Assistant instance and show the dashboard of the Homebox MCP Server add-on, ready to install.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=homebox-mcp&repository_url=https%3A%2F%2Fgithub.com%2FMB901%2Fhomebox-mcp)
+
+This adds the repository and takes you straight to the add-on's page — click **Install** there.
+
+<details>
+<summary>Manual install</summary>
 
 1. In Home Assistant, go to **Settings** → **Add-ons** → **Add-on Store**
 2. Click the menu (⋮) → **Repositories**
-3. Add: `https://github.com/oangelo/homebox-mcp`
+3. Add: `https://github.com/MB901/homebox-mcp`
 4. Click **Add** → **Close**
+5. Search for "Homebox MCP Server" in the store
+6. Click **Install**
+7. Configure the Homebox credentials
+8. Start the add-on
 
-### Install Add-on
-
-1. Search for "Homebox MCP Server" in the store
-2. Click **Install**
-3. Configure the Homebox credentials
-4. Start the add-on
+</details>
 
 ## Configuration
 

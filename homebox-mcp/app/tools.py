@@ -8,6 +8,15 @@ from fastmcp import FastMCP
 
 from homebox_client import HomeboxClient
 
+# The calling model must emit this entire payload as base64 text to compose
+# the tool call — unlike homebox_add_item_attachment_from_url (where the
+# server downloads the bytes and the model only supplies a short URL), there
+# is currently no MCP mechanism that lets a client inject an uploaded image's
+# bytes into a tool argument without the model generating every character
+# itself. A cap far below Homebox's own 10 MB upload limit keeps this
+# tool from silently turning into a multi-minute (or failing) generation.
+_MAX_BASE64_ATTACHMENT_BYTES = 1 * 1024 * 1024
+
 
 def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
     """Register all Homebox tools with the MCP server.
@@ -372,8 +381,15 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         The file must be base64-encoded (e.g. from a file read as bytes and
         base64-encoded, not raw binary — MCP tool arguments are JSON). Only
         JPEG, PNG, GIF, WEBP, HEIC images and PDF documents are accepted,
-        verified from the actual file content rather than the filename, and
-        uploads over 10 MB are rejected.
+        verified from the actual file content rather than the filename.
+
+        Uploads over 1 MB are rejected: you must generate this file's entire
+        content as base64 text to make this call, which is extremely slow or
+        fails outright above that size. If the file is available at a public
+        URL, use homebox_add_item_attachment_from_url instead (10 MB limit,
+        downloaded server-side with no generation cost). For a file the user
+        shared directly with no URL, ask them for a smaller/compressed
+        version if it's over the limit.
 
         Args:
             item_id: Item ID (UUID) to attach the file to.
@@ -394,6 +410,19 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             data = base64.b64decode(file_base64, validate=True)
         except (binascii.Error, ValueError) as exc:
             raise ValueError(f"file_base64 is not valid base64 data: {exc}") from exc
+
+        if len(data) > _MAX_BASE64_ATTACHMENT_BYTES:
+            raise ValueError(
+                f"File is {len(data) / 1_048_576:.2f} MB, which exceeds the "
+                f"{_MAX_BASE64_ATTACHMENT_BYTES // 1024} KB limit for base64 uploads. "
+                "This limit exists because you (the calling model) must generate the "
+                "entire file as base64 text to make this call, which becomes "
+                "extremely slow or fails outright above this size. If the file has a "
+                "public URL, use homebox_add_item_attachment_from_url instead — it "
+                "downloads server-side with a much higher 10 MB limit. Otherwise, "
+                "ask the user for a smaller/more compressed version of the file."
+            )
+
         return await client.add_item_attachment(item_id, data, filename, attachment_type, primary)
 
     @mcp.tool()

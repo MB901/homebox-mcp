@@ -12,13 +12,18 @@ Servidor MCP (Model Context Protocol) para gerenciar o inventário do Homebox vi
 
 Este addon foi desenvolvido para funcionar com o **Homebox** rodando no Home Assistant.
 
-**Addon Homebox recomendado:** [homebox-ingress-ha-addon](https://github.com/Oddiesea/homebox-ingress-ha-addon)
+**Addon Homebox recomendado:** [homebox-addon](https://github.com/Crafter-Y/homebox-addon)
 
-Para instalar o Homebox:
+[![Abra sua instância do Home Assistant e mostre o diálogo de adicionar repositório de add-on com uma URL de repositório específica pré-preenchida.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FCrafter-Y%2Fhomebox-addon)
 
-1. Adicione o repositório: `https://github.com/Oddiesea/homebox-ingress-ha-addon`
+<details>
+<summary>Instalação manual</summary>
+
+1. Adicione o repositório: `https://github.com/Crafter-Y/homebox-addon`
 2. Instale o addon **Homebox**
 3. Inicie e configure seu inventário
+
+</details>
 
 ## Sobre
 
@@ -33,19 +38,25 @@ interajam com seu inventário do Homebox. Você pode:
 
 ## Instalação
 
-### Adicionar Repositório
+### Instalação com um clique
+
+[![Abra sua instância do Home Assistant e mostre a página do add-on Homebox MCP Server, pronta para instalar.](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=homebox-mcp&repository_url=https%3A%2F%2Fgithub.com%2FMB901%2Fhomebox-mcp)
+
+Isso adiciona o repositório e leva você direto à página do add-on — clique em **Instalar** por lá.
+
+<details>
+<summary>Instalação manual</summary>
 
 1. No Home Assistant, vá em **Configurações** → **Add-ons** → **Loja de Add-ons**
 2. Clique no menu (⋮) → **Repositórios**
-3. Adicione: `https://github.com/oangelo/homebox-mcp`
+3. Adicione: `https://github.com/MB901/homebox-mcp`
 4. Clique em **Adicionar** → **Fechar**
+5. Procure por "Homebox MCP Server" na loja
+6. Clique em **Instalar**
+7. Configure as credenciais do Homebox
+8. Inicie o add-on
 
-### Instalar Add-on
-
-1. Procure por "Homebox MCP Server" na loja
-2. Clique em **Instalar**
-3. Configure as credenciais do Homebox
-4. Inicie o add-on
+</details>
 
 ## Configuração
 

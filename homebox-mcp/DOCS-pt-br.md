@@ -102,11 +102,13 @@ Quando a autenticação está ativada:
 ### Addon Homebox Recomendado
 
 Este MCP foi desenvolvido para funcionar com o addon
-[homebox-ingress-ha-addon](https://github.com/Oddiesea/homebox-ingress-ha-addon).
+[homebox-addon](https://github.com/Crafter-Y/homebox-addon).
+
+[![Abra sua instância do Home Assistant e mostre o diálogo de adicionar repositório de add-on com uma URL de repositório específica pré-preenchida.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FCrafter-Y%2Fhomebox-addon)
 
 Para instalar:
 
-1. Adicione o repositório: `https://github.com/Oddiesea/homebox-ingress-ha-addon`
+1. Adicione o repositório: `https://github.com/Crafter-Y/homebox-addon`
 2. Instale o addon **Homebox**
 3. Inicie e configure seu inventário
 
@@ -144,7 +146,8 @@ Se o Homebox está rodando externamente:
 - **homebox_move_item**: Move um item para outra localização
 - **homebox_add_item_attachment**: Anexa uma foto ou documento (manual,
   garantia, recibo) a um item (JPEG/PNG/GIF/WEBP/HEIC/PDF em base64,
-  máximo 10 MB)
+  máximo 1 MB — baixo porque a IA que chama a ferramenta precisa gerar o
+  arquivo inteiro como texto base64 para fazer a chamada)
 - **homebox_add_item_attachment_from_url**: Anexa uma foto ou documento a
   um item baixando-o de uma URL (ex.: encontrada em uma busca na web) em
   vez de bytes em base64 fornecidos pelo usuário. Mesma validação de

@@ -41,6 +41,26 @@ _MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 _MAX_REDIRECTS = 5
 _DOWNLOAD_USER_AGENT = "homebox-mcp (+https://github.com/MB901/homebox-mcp)"
 
+# Homebox's own field length limits (Ent schema `.MaxLen()`, the real DB
+# constraint). Some of these (name, description) are also cleanly rejected
+# by Homebox's own request validator; others (notes, serial_number,
+# warranty_details, sold_notes, color) are enforced only at the DB layer and
+# fail with an opaque server error instead of a clean 4xx if exceeded — this
+# map lets _check_max_length() catch both cases locally with a clear message.
+_MAX_FIELD_LENGTHS: dict[str, int] = {
+    "name": 255,
+    "description": 1000,
+    "notes": 1000,
+    "serial_number": 255,
+    "model_number": 255,
+    "manufacturer": 255,
+    "warranty_details": 1000,
+    "purchase_from": 255,
+    "sold_to": 255,
+    "sold_notes": 1000,
+    "color": 255,
+}
+
 # Extensions that are unambiguously NOT one of the supported attachment
 # formats (JPEG/PNG/GIF/WEBP/HEIC/PDF). Used only as a fail-fast optimization
 # in add_item_attachment_from_url() to skip downloading a URL that's
@@ -253,6 +273,25 @@ class HomeboxClient:
         return date_str
 
     @staticmethod
+    def _check_max_length(field_name: str, value: str | None) -> None:
+        """Raise ValueError if `value` exceeds Homebox's known limit for
+        `field_name`. Homebox enforces this cleanly for some fields (name,
+        description) but only at the DB layer for others (notes,
+        serial_number, warranty_details, sold_notes, color), where an
+        over-limit value fails with an opaque server error instead of a
+        clean validation message — checking client-side avoids that
+        regardless of which Homebox API mode is active.
+        """
+        if value is None:
+            return
+        limit = _MAX_FIELD_LENGTHS[field_name]
+        if len(value) > limit:
+            raise ValueError(
+                f"{field_name} exceeds Homebox's {limit}-character limit "
+                f"({len(value)} characters given)."
+            )
+
+    @staticmethod
     def _normalize_item(entity: dict[str, Any]) -> dict[str, Any]:
         """Map an entity object to the legacy item shape expected by the tools."""
         parent = entity.get("parent") or {}
@@ -395,13 +434,16 @@ class HomeboxClient:
         """Create a new location.
 
         Args:
-            name: Location name.
-            description: Optional description.
+            name: Location name (max 255 characters).
+            description: Optional description (max 1000 characters).
             parent_id: Optional parent location ID for hierarchy.
 
         Returns:
             Created location object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+
         data: dict[str, Any] = {"name": name}
         if description:
             data["description"] = description
@@ -427,13 +469,16 @@ class HomeboxClient:
 
         Args:
             location_id: The location UUID.
-            name: New name (optional).
-            description: New description (optional).
+            name: New name (optional, max 255 characters).
+            description: New description (optional, max 1000 characters).
             parent_id: New parent location ID (optional).
 
         Returns:
             Updated location object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+
         # Fetch current location to preserve fields not provided.
         current = await self.get_location(location_id)
         current_parent_id = (
@@ -552,15 +597,18 @@ class HomeboxClient:
         """Create a new item.
 
         Args:
-            name: Item name.
+            name: Item name (max 255 characters).
             location_id: Location ID where the item will be stored.
-            description: Optional description.
+            description: Optional description (max 1000 characters).
             quantity: Item quantity (default: 1).
             labels: Optional list of label IDs.
 
         Returns:
             Created item object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+
         if await self._get_api_mode() == "legacy":
             data: dict[str, Any] = {
                 "name": name,
@@ -618,17 +666,17 @@ class HomeboxClient:
 
         Args:
             item_id: The item UUID.
-            name: New name (optional).
-            description: New description (optional).
+            name: New name (optional, max 255 characters).
+            description: New description (optional, max 1000 characters).
             quantity: New quantity (optional).
             location_id: New location ID (optional).
             labels: New list of label IDs (optional).
             insured: Insurance status (optional).
             archived: Archive status (optional).
             asset_id: Asset ID (optional).
-            serial_number: Serial number (optional).
-            model_number: Model number (optional).
-            manufacturer: Manufacturer (optional).
+            serial_number: Serial number (optional, max 255 characters).
+            model_number: Model number (optional, max 255 characters).
+            manufacturer: Manufacturer (optional, max 255 characters).
             lifetime_warranty: Lifetime warranty flag (optional). Only
                 applied in entities mode (Homebox v0.26.0+); ignored
                 against the legacy API.
@@ -636,32 +684,43 @@ class HomeboxClient:
                 "YYYY-MM-DD" or a full ISO 8601 timestamp. Only applied in
                 entities mode (Homebox v0.26.0+); ignored against the
                 legacy API.
-            warranty_details: Warranty details/notes (optional). Only
-                applied in entities mode (Homebox v0.26.0+); ignored
-                against the legacy API.
+            warranty_details: Warranty details/notes (optional, max 1000
+                characters). Only applied in entities mode (Homebox
+                v0.26.0+); ignored against the legacy API.
             purchase_price: Purchase price (optional).
             purchase_date: Purchase date (optional), as "YYYY-MM-DD" or a
                 full ISO 8601 timestamp. Only applied in entities mode
                 (Homebox v0.26.0+); ignored against the legacy API.
-            purchase_from: Where the item was purchased (optional). Only
-                applied in entities mode (Homebox v0.26.0+); ignored
-                against the legacy API.
+            purchase_from: Where the item was purchased (optional, max 255
+                characters). Only applied in entities mode (Homebox
+                v0.26.0+); ignored against the legacy API.
             sold_date: Date the item was sold (optional), as "YYYY-MM-DD"
                 or a full ISO 8601 timestamp. Only applied in entities
                 mode (Homebox v0.26.0+); ignored against the legacy API.
-            sold_to: Who the item was sold to (optional). Only applied in
-                entities mode (Homebox v0.26.0+); ignored against the
-                legacy API.
+            sold_to: Who the item was sold to (optional, max 255
+                characters). Only applied in entities mode (Homebox
+                v0.26.0+); ignored against the legacy API.
             sold_price: Sale price (optional). Only applied in entities
                 mode (Homebox v0.26.0+); ignored against the legacy API.
-            sold_notes: Notes about the sale (optional). Only applied in
-                entities mode (Homebox v0.26.0+); ignored against the
-                legacy API.
-            notes: Notes (optional).
+            sold_notes: Notes about the sale (optional, max 1000
+                characters). Only applied in entities mode (Homebox
+                v0.26.0+); ignored against the legacy API.
+            notes: Notes (optional, max 1000 characters).
 
         Returns:
             Updated item object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+        self._check_max_length("notes", notes)
+        self._check_max_length("serial_number", serial_number)
+        self._check_max_length("model_number", model_number)
+        self._check_max_length("manufacturer", manufacturer)
+        self._check_max_length("warranty_details", warranty_details)
+        self._check_max_length("purchase_from", purchase_from)
+        self._check_max_length("sold_to", sold_to)
+        self._check_max_length("sold_notes", sold_notes)
+
         if await self._get_api_mode() == "legacy":
             return await self._update_item_legacy(
                 item_id=item_id,
@@ -1161,13 +1220,17 @@ class HomeboxClient:
         """Create a new label (tag in the modern API).
 
         Args:
-            name: Label name.
-            description: Optional description.
-            color: Optional color (hex code).
+            name: Label name (max 255 characters).
+            description: Optional description (max 1000 characters).
+            color: Optional color (hex code, max 255 characters).
 
         Returns:
             Created label object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+        self._check_max_length("color", color)
+
         data: dict[str, Any] = {"name": name}
         if description:
             data["description"] = description
@@ -1195,13 +1258,17 @@ class HomeboxClient:
 
         Args:
             label_id: The label UUID.
-            name: New name (optional).
-            description: New description (optional).
-            color: New color (optional).
+            name: New name (optional, max 255 characters).
+            description: New description (optional, max 1000 characters).
+            color: New color (optional, max 255 characters).
 
         Returns:
             Updated label object.
         """
+        self._check_max_length("name", name)
+        self._check_max_length("description", description)
+        self._check_max_length("color", color)
+
         current = await self.get_label(label_id)
         data: dict[str, Any] = {
             "id": label_id,

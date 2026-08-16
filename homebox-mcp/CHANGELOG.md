@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev6] - 2026-08-15
+
+### Added
+
+- **Character-limit validation for text fields**, matching Homebox's own
+  `name` (255), `description` (1000), `notes` (1000), `serial_number`
+  (255), `model_number` (255), `manufacturer` (255), `warranty_details`
+  (1000), `purchase_from` (255), `sold_to` (255), `sold_notes` (1000),
+  and label `color` (255) limits. Exceeding a limit now raises a clear
+  error from the MCP itself instead of reaching Homebox — this matters
+  most for `notes`, `serial_number`, `warranty_details`, `sold_notes`,
+  and `color`, which Homebox only enforces at the database layer, not
+  via its request validator, so an over-limit value previously failed
+  with an opaque server error rather than a clean rejection. Every
+  affected tool's docstring now also states the limit up front.
+
 ## [0.5.1dev5] - 2026-08-15
 
 ### Added

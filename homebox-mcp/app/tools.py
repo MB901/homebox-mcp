@@ -91,8 +91,8 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         such as rooms, cabinets, drawers, etc.
 
         Args:
-            name: Location name (required).
-            description: Optional location description.
+            name: Location name (required, max 255 characters).
+            description: Optional location description (max 1000 characters).
             parent_id: Parent location ID to create hierarchy.
                        For example, "Drawer 1" can be a child of "Desk".
 
@@ -112,8 +112,8 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
 
         Args:
             location_id: Location ID (UUID) to update.
-            name: New name (optional).
-            description: New description (optional).
+            name: New name (optional, max 255 characters).
+            description: New description (optional, max 1000 characters).
             parent_id: New parent location ID (optional).
 
         Returns:
@@ -235,9 +235,9 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         Use this tool to add new items to the inventory.
 
         Args:
-            name: Item name (required).
+            name: Item name (required, max 255 characters).
             location_id: Location ID (UUID) where the item will be stored.
-            description: Item description (optional).
+            description: Item description (optional, max 1000 characters).
             quantity: Item quantity (default: 1).
             labels: List of label IDs (UUIDs) to associate with the item.
 
@@ -279,37 +279,40 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
 
         Args:
             item_id: Item ID (UUID) to update (required).
-            name: New item name.
-            description: New description.
+            name: New item name (max 255 characters).
+            description: New description (max 1000 characters).
             quantity: New quantity.
             location_id: New location ID (moves the item).
             labels: New list of label IDs.
             insured: Insurance status (true/false).
             archived: Archived status (true/false).
             asset_id: Asset/property ID.
-            serial_number: Serial number.
-            model_number: Model number.
-            manufacturer: Manufacturer.
+            serial_number: Serial number (max 255 characters).
+            model_number: Model number (max 255 characters).
+            manufacturer: Manufacturer (max 255 characters).
             lifetime_warranty: Lifetime warranty flag (true/false). Requires
                 Homebox v0.26.0+; ignored on older Homebox versions.
             warranty_expires: Warranty expiration date, as "YYYY-MM-DD".
                 Requires Homebox v0.26.0+; ignored on older Homebox versions.
-            warranty_details: Warranty details/notes. Requires Homebox
-                v0.26.0+; ignored on older Homebox versions.
+            warranty_details: Warranty details/notes (max 1000 characters).
+                Requires Homebox v0.26.0+; ignored on older Homebox versions.
             purchase_price: Purchase price.
             purchase_date: Purchase date, as "YYYY-MM-DD". Requires
                 Homebox v0.26.0+; ignored on older Homebox versions.
-            purchase_from: Where the item was purchased. Requires Homebox
-                v0.26.0+; ignored on older Homebox versions.
+            purchase_from: Where the item was purchased (max 255
+                characters). Requires Homebox v0.26.0+; ignored on older
+                Homebox versions.
             sold_date: Date the item was sold, as "YYYY-MM-DD". Requires
                 Homebox v0.26.0+; ignored on older Homebox versions.
-            sold_to: Who the item was sold to. Requires Homebox v0.26.0+;
-                ignored on older Homebox versions.
+            sold_to: Who the item was sold to (max 255 characters).
+                Requires Homebox v0.26.0+; ignored on older Homebox
+                versions.
             sold_price: Sale price. Requires Homebox v0.26.0+; ignored on
                 older Homebox versions.
-            sold_notes: Notes about the sale. Requires Homebox v0.26.0+;
-                ignored on older Homebox versions.
-            notes: Notes/observations.
+            sold_notes: Notes about the sale (max 1000 characters).
+                Requires Homebox v0.26.0+; ignored on older Homebox
+                versions.
+            notes: Notes/observations (max 1000 characters).
 
         Returns:
             Updated item with all fields.
@@ -489,9 +492,10 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         "Tools", "Documents").
 
         Args:
-            name: Label name (required).
-            description: Label description (optional).
-            color: Color in hexadecimal format (e.g., "#FF5733").
+            name: Label name (required, max 255 characters).
+            description: Label description (optional, max 1000 characters).
+            color: Color in hexadecimal format (e.g., "#FF5733"; max 255
+                characters).
 
         Returns:
             Created label with all fields.
@@ -509,9 +513,10 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
 
         Args:
             label_id: Label ID (UUID) to update.
-            name: New name (optional).
-            description: New description (optional).
-            color: New color in hexadecimal format (optional).
+            name: New name (optional, max 255 characters).
+            description: New description (optional, max 1000 characters).
+            color: New color in hexadecimal format (optional, max 255
+                characters).
 
         Returns:
             Updated label.

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1dev9] - 2026-08-16
+
+### Fixed
+
+- **`quantity` was typed as an integer, rejecting the fractional
+  quantities Homebox itself has supported since v0.25.0** (e.g. `2.5`
+  units of something sold by partial amounts). `homebox_create_item` and
+  `homebox_update_item` now accept `quantity` as a number; docstrings
+  note that fractional values require Homebox v0.25.0+ (older versions
+  accept whole numbers only). Unlike the entities-only fields added
+  earlier in this changelog, this applies to both API modes: Homebox's
+  fractional-quantity support (PR sysadminsmedia/homebox#1372) landed in
+  the legacy `Item` model before the v0.26.0 entity merge, so it was
+  never entities-specific.
+
 ## [0.5.1dev8] - 2026-08-16
 
 ### Changed

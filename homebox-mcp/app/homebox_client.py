@@ -591,7 +591,7 @@ class HomeboxClient:
         name: str,
         location_id: str,
         description: str | None = None,
-        quantity: int = 1,
+        quantity: float = 1,
         labels: list[str] | None = None,
     ) -> dict[str, Any]:
         """Create a new item.
@@ -600,7 +600,9 @@ class HomeboxClient:
             name: Item name (max 255 characters).
             location_id: Location ID where the item will be stored.
             description: Optional description (max 1000 characters).
-            quantity: Item quantity (default: 1).
+            quantity: Item quantity (default: 1). Fractional values (e.g.
+                2.5) are supported on Homebox v0.25.0+; older versions
+                accept whole numbers only.
             labels: Optional list of label IDs.
 
         Returns:
@@ -641,7 +643,7 @@ class HomeboxClient:
         item_id: str,
         name: str | None = None,
         description: str | None = None,
-        quantity: int | None = None,
+        quantity: float | None = None,
         location_id: str | None = None,
         labels: list[str] | None = None,
         insured: bool | None = None,
@@ -668,7 +670,9 @@ class HomeboxClient:
             item_id: The item UUID.
             name: New name (optional, max 255 characters).
             description: New description (optional, max 1000 characters).
-            quantity: New quantity (optional).
+            quantity: New quantity (optional). Fractional values (e.g.
+                2.5) are supported on Homebox v0.25.0+; older versions
+                accept whole numbers only.
             location_id: New location ID (optional).
             labels: New list of label IDs (optional).
             insured: Insurance status (optional).
@@ -824,7 +828,7 @@ class HomeboxClient:
         item_id: str,
         name: str | None,
         description: str | None,
-        quantity: int | None,
+        quantity: float | None,
         location_id: str | None,
         labels: list[str] | None,
         insured: bool | None,

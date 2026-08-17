@@ -236,7 +236,7 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         name: str,
         location_id: str,
         description: str | None = None,
-        quantity: int = 1,
+        quantity: float = 1,
         labels: list[str] | None = None,
     ) -> dict[str, Any]:
         """Create a new item in the inventory.
@@ -247,7 +247,9 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             name: Item name (required, max 255 characters).
             location_id: Location ID (UUID) where the item will be stored.
             description: Item description (optional, max 1000 characters).
-            quantity: Item quantity (default: 1).
+            quantity: Item quantity (default: 1). Fractional values (e.g.
+                2.5) are supported on Homebox v0.25.0+; older versions
+                accept whole numbers only.
             labels: List of label IDs (UUIDs) to associate with the item.
 
         Returns:
@@ -260,7 +262,7 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
         item_id: str,
         name: str | None = None,
         description: str | None = None,
-        quantity: int | None = None,
+        quantity: float | None = None,
         location_id: str | None = None,
         labels: list[str] | None = None,
         insured: bool | None = None,
@@ -290,7 +292,9 @@ def register_tools(mcp: FastMCP, client: HomeboxClient) -> None:
             item_id: Item ID (UUID) to update (required).
             name: New item name (max 255 characters).
             description: New description (max 1000 characters).
-            quantity: New quantity.
+            quantity: New quantity. Fractional values (e.g. 2.5) are
+                supported on Homebox v0.25.0+; older versions accept
+                whole numbers only.
             location_id: New location ID (moves the item).
             labels: New list of label IDs.
             insured: Insurance status (true/false).
